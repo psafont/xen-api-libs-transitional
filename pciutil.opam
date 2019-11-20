@@ -12,6 +12,12 @@ depends: [
   "dune" {build}
   "xapi-stdext-unix"
 ]
+depexts: [
+  ["libpci-dev"] {os-distribution = "debian"}
+  ["libpci-dev"] {os-distribution = "ubuntu"}
+  ["pciutils-devel"] {os-distribution = "centos"}
+  ["pciutils-devel"] {os-distribution = "fedora"}
+]
 synopsis: "Further transitional libraries required by xapi"
 description: """
 These libraries are provided for backwards compatibility only.
