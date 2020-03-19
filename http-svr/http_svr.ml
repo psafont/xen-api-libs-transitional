@@ -31,7 +31,6 @@
 
 open Http
 
-open Xapi_stdext_monadic
 open Xapi_stdext_pervasives.Pervasiveext
 open Xapi_stdext_threads
 open Xapi_stdext_unix
@@ -128,30 +127,30 @@ let response_error_html ?(version="1.1") s code message hdrs body =
   Unixext.really_write_string s (Http.Response.to_wire_string res)
 
 let response_unauthorised ?req label s =
-  let version = Opt.map get_return_version req in
+  let version = Option.map get_return_version req in
   let body = "<html><body><h1>HTTP 401 unauthorised</h1>Please check your credentials and retry.</body></html>" in
   let realm = "WWW-Authenticate", Printf.sprintf "Basic realm=\"%s\"" label in
   response_error_html ?version s "401" "Unauthorised" [ realm ] body
 
 let response_forbidden ?req s =
-  let version = Opt.map get_return_version req in
-  let body = "<html><body><h1>HTTP 403 forbidden</h1>Access to the requested resource is forbidden.</body></html>" in	
+  let version = Option.map get_return_version req in
+  let body = "<html><body><h1>HTTP 403 forbidden</h1>Access to the requested resource is forbidden.</body></html>" in
   response_error_html ?version s "403" "Forbidden" [] body
 
 let response_badrequest ?req s =
-  let version = Opt.map get_return_version req in
+  let version = Option.map get_return_version req in
   let body = "<html><body><h1>HTTP 400 bad request</h1>The HTTP request was malformed. Please correct and retry.</body></html>" in
   response_error_html ?version s "400" "Bad Request" [] body
 
 let response_internal_error ?req ?extra s =
-  let version = Opt.map get_return_version req in
-  let extra = Opt.default "" (Opt.map (fun x -> "<h1> Additional information </h1>" ^ x) extra) in
+  let version = Option.map get_return_version req in
+  let extra = Option.value ~default:"" (Option.map (fun x -> "<h1> Additional information </h1>" ^ x) extra) in
   let body = "<html><body><h1>HTTP 500 internal server error</h1>An unexpected error occurred; please wait a while and try again. If the problem persists, please contact your support representative." ^ extra ^ "</body></html>" in
   response_error_html ?version s "500" "Internal Error" [] body
 
 let response_method_not_implemented ?req s =
-  let version = Opt.map get_return_version req in
-  let extra = Opt.default "" (Opt.map (fun req ->
+  let version = Option.map get_return_version req in
+  let extra = Option.value ~default:"" (Option.map (fun req ->
       Printf.sprintf "<p>%s not supported.<br /></p>" (Http.string_of_method_t req.Http.Request.m)
     ) req) in
   let body = "<html><body><h1>HTTP 501 Method Not Implemented</h1>" ^ extra ^ "</body></html>" in
@@ -159,7 +158,7 @@ let response_method_not_implemented ?req s =
 
 let response_file ?mime_content_type s file =
   let size = (Unix.LargeFile.stat file).Unix.LargeFile.st_size in
-  let mime_header = Opt.default [] (Opt.map (fun ty -> [ Hdr.content_type, ty ]) mime_content_type) in
+  let mime_header = Option.value ~default:[] (Option.map (fun ty -> [ Hdr.content_type, ty ]) mime_content_type) in
   let keep_alive = Http.Hdr.connection, "keep-alive" in
   let res = Http.Response.make ~version:"1.1" ~headers:(keep_alive :: mime_header)
       ~length:size "200" "OK" in
@@ -231,7 +230,7 @@ module Server = struct
     then None
     else
       let rt = MethodMap.find m x.handlers in
-      Opt.map (fun te -> te.TE.stats) (Radix_tree.longest_prefix uri rt)
+      Option.map (fun te -> te.TE.stats) (Radix_tree.longest_prefix uri rt)
 
   let all_stats x =
     let open Radix_tree in
@@ -443,7 +442,7 @@ let handle_one (x: 'a Server.t) ss context req =
     D.debug "Request %s" (Http.Request.to_string req);
     let method_map = try MethodMap.find req.Request.m x.Server.handlers with Not_found -> raise Method_not_implemented in
     let empty = TE.empty () in
-    let te = Opt.default empty (Radix_tree.longest_prefix req.Request.uri method_map) in
+    let te = Option.value ~default:empty (Radix_tree.longest_prefix req.Request.uri method_map) in
     (match te.TE.handler with
      | BufIO handlerfn -> handlerfn req ic context
      | FdIO handlerfn ->
@@ -486,7 +485,7 @@ let handle_connection (x: 'a Server.t) _ ss =
     let req = request_of_bio ~use_fastpath:x.Server.use_fastpath ic in
 
     (* 2. now we attempt to process the request *)
-    finished := Opt.default true (Opt.map (handle_one x ss x.Server.default_context) req);
+    finished := Option.value ~default:true (Option.map (handle_one x ss x.Server.default_context) req);
   done;
   Unix.close ss
 

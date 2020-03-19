@@ -58,9 +58,9 @@ open Xapi_stdext_threads.Threadext
 
 let m = Mutex.create ()
 
-let id_of_stunnel stunnel =
-  let open Xapi_stdext_monadic in
-  Opt.default "unknown" (Opt.map string_of_int stunnel.Stunnel.unique_id)
+let id_of_stunnel stunnel = stunnel.Stunnel.unique_id
+|> Option.map string_of_int
+|> Option.value ~default:"unknown"
 
 let unlocked_gc () =
   if debug_enabled then begin

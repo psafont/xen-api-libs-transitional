@@ -167,8 +167,7 @@ let http_rpc_recv_response use_fastpath error_msg fd =
     begin match response.Http.Response.code with
       | ("401"|"403"|"500") as http_code -> raise (Http_error (http_code,error_msg))
       | "200" ->
-        let open Xapi_stdext_monadic in
-        Opt.iter (fun x -> last_content_length := x) response.Http.Response.content_length;
+        Option.iter (fun x -> last_content_length := x) response.Http.Response.content_length;
         response
       | code -> raise (Http_request_rejected (Printf.sprintf "%s: %s" code error_msg))
     end

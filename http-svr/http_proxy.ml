@@ -16,7 +16,6 @@ module D=Debug.Make(struct let name="http_proxy" end)
 open D
 
 open Xmlrpc_client
-open Xapi_stdext_monadic
 open Xapi_stdext_threads.Threadext
 open Xapi_stdext_pervasives.Pervasiveext
 
@@ -34,7 +33,7 @@ let one request fromfd s =
       | _ -> request.Http.Request.content_length in
     let (_: int64) = Unixext.copy_file ?limit fromfd s in
     (* Receive response headers from master *)
-    let response = Opt.default Http.Response.internal_error (Http_client.response_of_fd s) in
+    let response = Option.value ~default:Http.Response.internal_error (Http_client.response_of_fd s) in
     (* Transmit response headers to client *)
     Unixext.really_write_string fromfd (Http.Response.to_wire_string response);
     if response.Http.Response.code = "200" then begin
@@ -56,7 +55,7 @@ let http_proxy src_ip src_port transport =
       (fun () ->
          let bio = Buf_io.of_fd fromfd in
          let request = Http_svr.request_of_bio bio in
-         Opt.iter
+         Option.iter
            (fun request ->
               with_transport transport (one request fromfd)
            ) request;

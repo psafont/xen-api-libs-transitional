@@ -12,7 +12,6 @@
  * GNU Lesser General Public License for more details.
  *)
 
-open Xapi_stdext_monadic
 open Xapi_stdext_pervasives.Pervasiveext
 open Xapi_stdext_threads.Threadext
 
@@ -32,13 +31,13 @@ end
 let user_agent = "xen-api-libs/1.0"
 
 let connect ?session_id ?task_id ?subtask_of path =
-  let arg str x = Opt.default [] (Opt.map (fun x -> [ str, x ]) x) in
+  let arg str x = Option.value ~default:[] (Option.map (fun x -> [ str, x ]) x) in
   let cookie = arg "session_id" session_id @ (arg "task_id" task_id) @ (arg "subtask_of" subtask_of) in
   Http.Request.make ~user_agent ~version:"1.0" ~keep_alive:true ~cookie ?subtask_of
     Http.Connect path
 
 let xmlrpc ?frame ?version ?keep_alive ?task_id ?cookie ?length ?auth ?subtask_of ?query ?body path =
-  let headers = Opt.map (fun x -> [ Http.Hdr.task_id, x ]) task_id in
+  let headers = Option.map (fun x -> [ Http.Hdr.task_id, x ]) task_id in
   Http.Request.make ~user_agent ?frame ?version ?keep_alive ?cookie ?headers ?length ?auth ?subtask_of ?query ?body
     Http.Post path
 
@@ -229,8 +228,10 @@ module SSL = struct
   }
   let to_string (x: t) =
     Printf.sprintf "{ use_fork_exec_helper = %b; use_stunnel_cache = %b; verify_cert = %s; task_id = %s }"
-      x.use_fork_exec_helper x.use_stunnel_cache (Opt.default "None" (Opt.map (fun x -> string_of_bool x) x.verify_cert))
-      (Opt.default "None" (Opt.map (fun x -> "Some " ^ x) x.task_id))
+      x.use_fork_exec_helper
+      x.use_stunnel_cache
+      (Option.value ~default:"None" (Option.map string_of_bool x.verify_cert))
+      (Option.value ~default:"None" (Option.map (fun x -> "Some " ^ x) x.task_id))
 end
 
 type transport =
@@ -248,10 +249,10 @@ let transport_of_url (scheme, _) =
   match scheme with
   | File { path = path } -> Unix path
   | Http ({ ssl = false; _ } as h) ->
-    let port = Opt.default 80 h.port in
+    let port = Option.value ~default:80 h.port in
     TCP(h.host, port)
   | Http ({ ssl = true; _ } as h) ->
-    let port = Opt.default 443 h.port in
+    let port = Option.value ~default:443 h.port in
     SSL(SSL.make (), h.host, port)
 
 let with_transport transport f =
@@ -286,7 +287,7 @@ let with_transport transport f =
 
     (* Call the {,un}set_stunnelpid_callback hooks around the remote call *)
     let with_recorded_stunnelpid task_opt s_pid f =
-      debug "with_recorded_stunnelpid task_opt=%s s_pid=%d" (Opt.default "None" task_opt) s_pid;
+      debug "with_recorded_stunnelpid task_opt=%s s_pid=%d" (Option.value ~default:"None" task_opt) s_pid;
       begin
         match !Internal.set_stunnelpid_callback with
         | Some f -> f task_id s_pid

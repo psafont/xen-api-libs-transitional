@@ -71,10 +71,9 @@ let init_stunnel_path () =
     )
 
 let stunnel_path () =
-  let open Xapi_stdext_monadic in
-  if Opt.is_none !cached_stunnel_path then
+  if Option.is_none !cached_stunnel_path then
     init_stunnel_path ();
-  Opt.unbox !cached_stunnel_path
+  Option.get !cached_stunnel_path
 
 module Unsafe = struct
   (** These functions are not safe in a multithreaded program *)

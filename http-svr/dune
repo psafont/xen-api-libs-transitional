@@ -12,7 +12,6 @@
               stunnel
               threads
               xapi-stdext-date
-              xapi-stdext-monadic
               xapi-stdext-pervasives
               xapi-stdext-threads
               xapi-stdext-unix
@@ -23,8 +22,7 @@
   (name http_test)
   (modules http_test)
   (libraries  http-svr
-              oUnit
-              xapi-stdext-monadic)
+              oUnit)
 )
 
 (executable

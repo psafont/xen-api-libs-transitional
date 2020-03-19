@@ -275,8 +275,7 @@ module Accept = struct
   }
 
   let string_of_t x =
-    let open Xapi_stdext_monadic in
-    Printf.sprintf "%s/%s;q=%.3f" (Opt.default "*" x.ty) (Opt.default "*" x.subty) (float_of_int x.q /. 1000.)
+    Printf.sprintf "%s/%s;q=%.3f" (Option.value ~default:"*" x.ty) (Option.value ~default:"*" x.subty) (float_of_int x.q /. 1000.)
 
   let matches (ty, subty) = function
     | { ty = Some ty'; subty = Some subty'; _ } -> ty' = ty && (subty' = subty)
@@ -374,7 +373,7 @@ module Request = struct
       version = version;
       frame = frame;
       close = not keep_alive;
-      cookie = Xapi_stdext_monadic.Opt.default [] cookie;
+      cookie = Option.value ~default:[] cookie;
       subtask_of = subtask_of;
       content_length = length;
       auth = auth;
@@ -425,19 +424,18 @@ module Request = struct
       (default "" x.user_agent)
 
   let to_header_list x =
-    let open Xapi_stdext_monadic in
     let kvpairs x = String.concat "&" (List.map (fun (k, v) -> urlencode k ^ "=" ^ (urlencode v)) x) in
     let query = if x.query = [] then "" else "?" ^ (kvpairs x.query) in
     let cookie = if x.cookie = [] then [] else [ Hdr.cookie ^": " ^ (kvpairs x.cookie) ] in
-    let transfer_encoding = Opt.default [] (Opt.map (fun x -> [ Hdr.transfer_encoding ^": " ^ x ]) x.transfer_encoding) in
-    let accept = Opt.default [] (Opt.map (fun x -> [ Hdr.accept ^ ": " ^ x]) x.accept) in
-    let content_length = Opt.default [] (Opt.map (fun x -> [ Printf.sprintf "%s: %Ld" Hdr.content_length x ]) x.content_length) in
-    let auth = Opt.default [] (Opt.map (fun x -> [ Hdr.authorization ^": " ^ (string_of_authorization x) ]) x.auth) in
-    let task = Opt.default [] (Opt.map (fun x -> [ Hdr.task_id ^ ": " ^ x ]) x.task) in
-    let subtask_of = Opt.default [] (Opt.map (fun x -> [ Hdr.subtask_of ^ ": " ^ x ]) x.subtask_of) in
-    let content_type = Opt.default [] (Opt.map (fun x -> [ Hdr.content_type ^": " ^ x ]) x.content_type) in
-    let host = Opt.default [] (Opt.map (fun x -> [ Hdr.host^": " ^ x ]) x.host) in
-    let user_agent = Opt.default [] (Opt.map (fun x -> [ Hdr.user_agent^": " ^ x ]) x.user_agent) in
+    let transfer_encoding = Option.value ~default:[] (Option.map (fun x -> [ Hdr.transfer_encoding ^": " ^ x ]) x.transfer_encoding) in
+    let accept = Option.value ~default:[] (Option.map (fun x -> [ Hdr.accept ^ ": " ^ x]) x.accept) in
+    let content_length = Option.value ~default:[] (Option.map (fun x -> [ Printf.sprintf "%s: %Ld" Hdr.content_length x ]) x.content_length) in
+    let auth = Option.value ~default:[] (Option.map (fun x -> [ Hdr.authorization ^": " ^ (string_of_authorization x) ]) x.auth) in
+    let task = Option.value ~default:[] (Option.map (fun x -> [ Hdr.task_id ^ ": " ^ x ]) x.task) in
+    let subtask_of = Option.value ~default:[] (Option.map (fun x -> [ Hdr.subtask_of ^ ": " ^ x ]) x.subtask_of) in
+    let content_type = Option.value ~default:[] (Option.map (fun x -> [ Hdr.content_type ^": " ^ x ]) x.content_type) in
+    let host = Option.value ~default:[] (Option.map (fun x -> [ Hdr.host^": " ^ x ]) x.host) in
+    let user_agent = Option.value ~default:[] (Option.map (fun x -> [ Hdr.user_agent^": " ^ x ]) x.user_agent) in
     let close = [ Hdr.connection ^": " ^ (if x.close then "close" else "keep-alive") ] in
     [ Printf.sprintf "%s %s%s HTTP/%s" (string_of_method_t x.m) x.uri query x.version ]
     @ cookie @ transfer_encoding @ accept @ content_length @ auth @ task @ subtask_of @ content_type @ host @ user_agent @ close
@@ -450,7 +448,7 @@ module Request = struct
       | Some b -> { x with content_length = Some (Int64.of_int (String.length b)) } in
     let hl = to_header_list x @ [""] in
     let headers = String.concat "" (List.map (fun x -> x ^ "\r\n") hl) in
-    let body = Xapi_stdext_monadic.Opt.default "" x.body in
+    let body = Option.value ~default:"" x.body in
     headers, body
 
   let to_wire_string (x: t) =
@@ -484,12 +482,11 @@ module Response = struct
   }
 
   let to_string x =
-    let open Xapi_stdext_monadic in
     let kvpairs x = String.concat "; " (List.map (fun (k, v) -> k ^ "=" ^ v) x) in
     Printf.sprintf "{ frame = %b; version = %s; code = %s; message = %s; content_length = %s; task = %s; additional_headers = [ %s ] }"
       x.frame x.version x.code x.message
-      (Opt.default "None" (Opt.map (fun x -> "Some " ^ (Int64.to_string x)) x.content_length))
-      (Opt.default "None" (Opt.map (fun x -> "Some " ^ x) x.task))
+      (Option.value ~default:"None" (Option.map (fun x -> "Some " ^ (Int64.to_string x)) x.content_length))
+      (Option.value ~default:"None" (Option.map (fun x -> "Some " ^ x) x.task))
       (kvpairs x.additional_headers)
 
   let empty = {
@@ -515,10 +512,9 @@ module Response = struct
 
   let internal_error = { empty with code = "500"; message = "internal error"; content_length = Some 0L }
   let to_header_list (x: t) =
-    let open Xapi_stdext_monadic in
     let status = Printf.sprintf "HTTP/%s %s %s" x.version x.code x.message in
-    let content_length = Opt.default [] (Opt.map (fun x -> [ Printf.sprintf "%s: %Ld" Hdr.content_length x ]) x.content_length) in
-    let task = Opt.default [] (Opt.map (fun x -> [ Hdr.task_id ^ ": " ^ x ]) x.task) in
+    let content_length = Option.value ~default:[] (Option.map (fun x -> [ Printf.sprintf "%s: %Ld" Hdr.content_length x ]) x.content_length) in
+    let task = Option.value ~default:[] (Option.map (fun x -> [ Hdr.task_id ^ ": " ^ x ]) x.task) in
     let headers = List.map (fun (k, v) -> k ^ ":" ^ v) x.additional_headers in
     status :: (content_length @ task @ headers)
 
@@ -529,7 +525,7 @@ module Response = struct
       | Some b -> { x with content_length = Some (Int64.of_int (String.length b)) } in
     let hl = to_header_list x @ [""] in
     let headers = String.concat "" (List.map (fun x -> x ^ "\r\n") hl) in
-    let body = Xapi_stdext_monadic.Opt.default "" x.body in
+    let body = Option.value ~default:"" x.body in
     headers, body
 
   let to_wire_string (x: t) =
