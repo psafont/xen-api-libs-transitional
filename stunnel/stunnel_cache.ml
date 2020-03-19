@@ -16,7 +16,7 @@
 
 (* Caveats:
    * stunnel donators should only donate stunnels which they knows are connected
-     to the main HTTP request loop in the server -- HTTP 1.1 should be used and 
+     to the main HTTP request loop in the server -- HTTP 1.1 should be used and
      the connection should be kept-alive
 *)
 
@@ -62,12 +62,12 @@ let id_of_stunnel stunnel =
   let open Xapi_stdext_monadic in
   Opt.default "unknown" (Opt.map string_of_int stunnel.Stunnel.unique_id)
 
-let unlocked_gc () = 
+let unlocked_gc () =
   if debug_enabled then begin
     let now = Unix.gettimeofday () in
-    let string_of_id id = 
+    let string_of_id id =
       let stunnel = Hashtbl.find !stunnels id in
-      Printf.sprintf "(id %s / idle %.2f age %.2f)" 
+      Printf.sprintf "(id %s / idle %.2f age %.2f)"
         (id_of_stunnel stunnel)
         (now -. (Hashtbl.find !times id))
         (now -. stunnel.Stunnel.connected_time) in
@@ -78,7 +78,7 @@ let unlocked_gc () =
 
   (* Split a list at the given index to give a pair of lists.
    *  From Xapi_stdext_std.Listext *)
-  let rec chop i l = 
+  let rec chop i l =
     match i, l with
     | 0, l -> [], l
     | i, h :: t -> (fun (fr, ba) -> h :: fr, ba) (chop (i - 1) t)
@@ -114,9 +114,9 @@ let unlocked_gc () =
     let _youngest, oldest = chop max_stunnel times' in
     let oldest_ids = List.map fst oldest in
     List.iter
-      (fun x -> 
+      (fun x ->
          let stunnel = Hashtbl.find !stunnels x in
-         debug "Expiring stunnel id %s since we have too many cached tunnels (limit is %d)" 
+         debug "Expiring stunnel id %s since we have too many cached tunnels (limit is %d)"
            (id_of_stunnel stunnel) max_stunnel) oldest_ids;
     to_gc := !to_gc @ oldest_ids
   end;
@@ -195,7 +195,7 @@ let remove host port verified =
 
 (** Flush the cache - remove everything *)
 let flush () =
-  Mutex.execute m 
+  Mutex.execute m
     (fun () ->
        info "Flushing cache of all %d stunnels." (Hashtbl.length !stunnels);
        Hashtbl.iter (fun _id st -> Stunnel.disconnect st) !stunnels;

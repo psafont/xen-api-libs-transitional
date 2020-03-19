@@ -49,7 +49,7 @@ let one request fromfd s =
 let server = ref None
 let m = Mutex.create ()
 
-let http_proxy src_ip src_port transport = 
+let http_proxy src_ip src_port transport =
   let tcp_connection _ fromfd =
     (* NB 'fromfd' is accepted within the server_io module and it expects us to close it *)
     finally

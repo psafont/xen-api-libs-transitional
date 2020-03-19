@@ -125,7 +125,7 @@ let test_url _ =
   begin match of_string "https://xapi.xen.org/services/SM?foo=bar" with
     | Http t, { uri = "/services/SM"; query_params = [ "foo", "bar" ] } ->
       assert (t.ssl = true);
-      assert (t.host = "xapi.xen.org");			
+      assert (t.host = "xapi.xen.org");
     | _ -> assert false
   end;
   begin
@@ -135,7 +135,7 @@ let test_url _ =
     assert (s = "https://xapi.xen.org/services/SM/data?foo=bar")
   end
 let _ =
-  let suite = "HTTP test" >::: 
+  let suite = "HTTP test" >:::
               [
                 "accept_simple" >:: test_accept_simple;
                 "accept_complex" >:: test_accept_complex;

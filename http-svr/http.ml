@@ -207,51 +207,27 @@ let read_up_to buf already_read marker fd =
       | None, None -> Scanner.remaining marker
       | Some x, None -> header_len_value_len - (!b - x)
       | _, Some l -> l - !b in
-(*
-		Printf.fprintf stderr "b = %d; safe_to_read = %d\n" !b safe_to_read;
-		flush stderr;
-*)
     let n =
       if !b < already_read
       then min safe_to_read (already_read - !b)
       else Unix.read fd buf !b safe_to_read in
     if n = 0 then raise End_of_file;
-(*
-		Printf.fprintf stderr "  n = %d\n" n;
-		flush stderr;
-*)
     for j = 0 to n - 1 do
-(*
-			Printf.fprintf stderr "b = %d; marker = %s; n = %d; j = %d\n" !b (Scanner.to_string marker) n j;
-			flush stderr;
-*)
       Scanner.input marker (Bytes.get buf (!b + j));
       if !header_len_value_at = None then begin
         Scanner.input hl_marker (Bytes.get buf (!b + j));
         if Scanner.matched hl_marker then begin
           header_len_value_at := Some(!b + j + 1);
-(*
-					Printf.fprintf stderr "header_len_value_at = %d\n" (!b + j + 1);
-					flush stderr
-*)
         end
       end
     done;
     b := !b + n;
-(*
-		Printf.fprintf stderr "b = %d\n" !b;
-		flush stderr;
-*)
     match !header_len_value_at with
     | Some x when x + header_len_value_len <= !b ->
       (* We can now read the header len header *)
       let hlv =
         Bytes.sub_string buf x header_len_value_len
       in
-(*
-				Printf.fprintf stderr "hlvn=[%s]" hlv;
-				flush stderr;
-*)
       header_len := Some (int_of_string hlv);
     | _ -> ()
   done;
@@ -265,8 +241,8 @@ let frame_header_length = String.length smallest_request
 
 let make_frame_header headers =
   (* Frame header is the size of the smallest HTTP request
-     	   and the smallest HTTP request is smaller than the smallest
-     	   HTTP response. *)
+     and the smallest HTTP request is smaller than the smallest
+     HTTP response. *)
   Printf.sprintf "FRAME %012d" (String.length headers)
 
 let read_frame_header buf =
