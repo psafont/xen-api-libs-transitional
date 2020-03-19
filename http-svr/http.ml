@@ -135,7 +135,7 @@ let urlencode param =
   in fn chars
 
 (** Parses strings of the form a=b&c=d into ["a", "b"; "c", "d"] *)
-let parse_keyvalpairs xs = 
+let parse_keyvalpairs xs =
   let kvpairs = List.map (Astring.String.cuts ~sep:"=") (Astring.String.cuts ~sep:"&" xs) in
   List.map (function
       | k :: vs -> ((urldecode k), urldecode (String.concat "=" vs))
@@ -159,10 +159,10 @@ let authorization_of_string x =
     let end_of_string s from =
       String.sub s from ((String.length s)-from) in
     match Base64.decode (end_of_string x (String.length basic)) with
-    | Result.Ok userpass -> (match Astring.String.cuts ~sep:":" userpass with
+    | Ok userpass -> (match Astring.String.cuts ~sep:":" userpass with
       | [ username; password ] -> Basic(username, password)
       | _ -> UnknownAuth x)
-    | Result.Error _ -> UnknownAuth x
+    | Error _ -> UnknownAuth x
   else UnknownAuth x
 
 let string_of_authorization = function
@@ -208,7 +208,7 @@ let read_up_to buf already_read marker fd =
       | Some x, None -> header_len_value_len - (!b - x)
       | _, Some l -> l - !b in
 (*
-		Printf.fprintf stderr "b = %d; safe_to_read = %d\n" !b safe_to_read; 
+		Printf.fprintf stderr "b = %d; safe_to_read = %d\n" !b safe_to_read;
 		flush stderr;
 *)
     let n =
@@ -265,7 +265,7 @@ let frame_header_length = String.length smallest_request
 
 let make_frame_header headers =
   (* Frame header is the size of the smallest HTTP request
-     	   and the smallest HTTP request is smaller than the smallest 
+     	   and the smallest HTTP request is smaller than the smallest
      	   HTTP response. *)
   Printf.sprintf "FRAME %012d" (String.length headers)
 
@@ -299,7 +299,7 @@ module Accept = struct
   }
 
   let string_of_t x =
-    let open Xapi_stdext_monadic in 
+    let open Xapi_stdext_monadic in
     Printf.sprintf "%s/%s;q=%.3f" (Opt.default "*" x.ty) (Opt.default "*" x.subty) (float_of_int x.q /. 1000.)
 
   let matches (ty, subty) = function
@@ -435,7 +435,7 @@ module Request = struct
 
   let to_string x =
     let kvpairs x = String.concat "; " (List.map (fun (k, v) -> k ^ "=" ^ v) x) in
-    Printf.sprintf "{ frame = %b; method = %s; uri = %s; query = [ %s ]; content_length = [ %s ]; transfer encoding = %s; version = %s; cookie = [ %s ]; task = %s; subtask_of = %s; content-type = %s; host = %s; user_agent = %s }" 
+    Printf.sprintf "{ frame = %b; method = %s; uri = %s; query = [ %s ]; content_length = [ %s ]; transfer encoding = %s; version = %s; cookie = [ %s ]; task = %s; subtask_of = %s; content-type = %s; host = %s; user_agent = %s }"
       x.frame (string_of_method_t x.m) x.uri
       (kvpairs x.query)
       (default "" (may Int64.to_string x.content_length))
@@ -592,7 +592,7 @@ module Url = struct
   type t = scheme * data
 
   let of_string url =
-    let sub_before c s = 
+    let sub_before c s =
       String.sub s 0 (String.index s c)
     in
     let sub_after c s =
@@ -614,7 +614,7 @@ module Url = struct
     let uname_password_host_port x = match Astring.String.cuts ~sep:"@" x with
       | [ _ ] -> None, host x, port x
       | [ uname_password; host_port ] ->
-        begin match Astring.String.cuts ~sep:":" uname_password with 
+        begin match Astring.String.cuts ~sep:":" uname_password with
           | [ uname; password ] -> Some (Basic (uname, password)), host host_port, port host_port
           | _ -> failwith (Printf.sprintf "Failed to parse authentication substring: %s" uname_password)
         end
@@ -642,7 +642,7 @@ module Url = struct
     uri ^ params
 
   (* Wrap a literal IPv6 address in square brackets; otherwise pass through *)
-  let maybe_wrap_IPv6_literal addr = 
+  let maybe_wrap_IPv6_literal addr =
     if Unixext.domain_of_addr addr = Some Unix.PF_INET6 then "[" ^ addr ^ "]" else addr
 
   let to_string = function
